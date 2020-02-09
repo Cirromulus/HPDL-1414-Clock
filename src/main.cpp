@@ -122,8 +122,6 @@ void loop() {
                     now.Minute(),
                     now.Second()
             );
-            auto_show(buf, 8);
-            state = State::date;
             break;
         case State::date:
             snprintf_P(buf,
@@ -133,22 +131,19 @@ void loop() {
                     now.Month(),
                     now.Year()
             );
-            auto_show(buf, 8);
-            state = State::temp;
             break;
         case State::temp:
-            state = State::time;
-        break;
             snprintf_P(buf,
                     sizeof(buf),
                     PSTR("%.2f C "),
                     temp.AsFloatDegC()
             );
-            auto_show(buf, 8);
             break;
         default:
             state = State::time;
             break;
     }
+    auto_show(buf, 8);
     delay(1000);
+    state = static_cast<State>((static_cast<unsigned>(state) + 1) % static_cast<unsigned>(State::_num);
 }
