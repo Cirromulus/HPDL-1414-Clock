@@ -45,29 +45,39 @@ void setup() {
     Serial.begin(115200);
 
     rtcSetup();
-    state = State::temp;
+    state = State::time;
 }
 
-void print(char* t, unsigned length)
+void print(const char* t, unsigned length)
 {
+    //delay(500);
     for(unsigned digit = 0; digit < length; digit++)
     {
+        //Serial.print(t[digit]);
+        //Serial.print(" ");
         digitalWrite(DIGIT[0], ~digit & 0b10);
+        //Serial.print(~digit & 0b10 ? 1 : 0);
         digitalWrite(DIGIT[1], ~digit & 0b01);
-        delayMicroseconds(1);
+        //Serial.print(~digit & 0b01 ? 1 : 0);
         digitalWrite(WRITE[0], !(digit & 0b100));
+        //Serial.print(!(digit & 0b100) ? 1 : 0);
         digitalWrite(WRITE[1], digit & 0b100);
+        //Serial.print((digit & 0b100) ? 1 : 0);
+        //Serial.print(" - ");
+
         for(unsigned i = 0; i < sizeof(DATA); i++)
         {
             digitalWrite(DATA[i], (1 << i) & t[digit]);
+            Serial.print( (1 << i) & t[digit] ? 1 : 0);
         }
         digitalWrite(WRITE[0], 1);
         digitalWrite(WRITE[1], 1);
-        delayMicroseconds(1);
+        //Serial.println();
     }
+    //delay(500);
 }
 
-void scroll(char* string, unsigned length)
+void scroll(const char* string, unsigned length)
 {
     for(unsigned i = 0; i < length; i++)
     {
@@ -76,7 +86,7 @@ void scroll(char* string, unsigned length)
     }
 }
 
-void auto_show(char* string, unsigned length)
+void auto_show(const char* string, unsigned length)
 {
     if(length <= 8)
         print(string, length);
@@ -84,7 +94,7 @@ void auto_show(char* string, unsigned length)
         scroll(string, length);
 }
 
-
+char buf[9];
 void loop() {
     if (!Rtc.IsDateTimeValid())
     {
@@ -111,10 +121,10 @@ void loop() {
     // you may also get the temperature as a float and print it
     Serial.println("C");
 
-    static char buf[9];
     switch(state)
     {
         case State::time:
+            Serial.println("Time mode");
             snprintf_P(buf,
                     sizeof(buf),
                     PSTR("%02u:%02u:%02u"),
@@ -124,6 +134,7 @@ void loop() {
             );
             break;
         case State::date:
+            Serial.println("Date mode");
             snprintf_P(buf,
                     sizeof(buf),
                     PSTR("%02u.%02u.%02u"),
@@ -133,17 +144,21 @@ void loop() {
             );
             break;
         case State::temp:
+            Serial.println("Temp mode");
             snprintf_P(buf,
                     sizeof(buf),
-                    PSTR("%.2f C "),
-                    temp.AsFloatDegC()
+                    PSTR(" %04d C "),
+                    int(temp.AsFloatDegC()*100)
             );
+            buf[4] = buf[3];
+            buf[3] = '.';
             break;
         default:
             state = State::time;
             break;
     }
+    Serial.println(buf);
     auto_show(buf, 8);
     delay(1000);
-    state = static_cast<State>((static_cast<unsigned>(state) + 1) % static_cast<unsigned>(State::_num);
+    state = static_cast<State>((static_cast<unsigned>(state) + 1) % static_cast<unsigned>(State::_num));
 }
