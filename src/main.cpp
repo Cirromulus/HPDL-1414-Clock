@@ -38,7 +38,8 @@ struct Alert
 static constexpr uint8_t ALERT_LENGTH_SEC = 30;
 Alert alerts[] = {
     {255, 11, 30, "ESSEN FASSEN! MAMPF MAMPF"},
-    {5, 16, 30, "FEIERABEND! BLOSS WEG HIER!"},
+    {  5, 16, 30, "FEIERABEND! BLOSS WEG HIER!"},
+    {255, 00, 00, "WURSTKOPF ARSCHBERGER FICKO"},
 };
 
 void setup() {
@@ -112,7 +113,6 @@ void auto_show(const char* string, unsigned length)
         scroll(string, length);
 }
 
-
 void loop() {
     if (!Rtc.IsDateTimeValid())
     {
@@ -155,7 +155,7 @@ void loop() {
     {
         case State::time:
             if(repeat == 0)
-                num_repetitions = 10;
+                num_repetitions = 20;
             snprintf_P(buf,
                     sizeof(buf),
                     PSTR("%02u:%02u:%02u"),
