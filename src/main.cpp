@@ -27,6 +27,20 @@ enum class State : unsigned
 uint8_t repeat = 0;
 uint8_t num_repetitions = 0;
 
+struct Alert
+{
+    uint8_t dayOfWeek;       // 0 = Sunday, 1 = Monday, ... 6 = Saturday, 255 = every day
+    uint8_t hour;
+    uint8_t minute;
+    const char* message;
+};
+
+static constexpr uint8_t ALERT_LENGTH_SEC = 30;
+Alert alerts[] = {
+    {255, 11, 30, "ESSEN FASSEN! MAMPF MAMPF"},
+    {5, 16, 30, "FEIERABEND! BLOSS WEG HIER!"},
+};
+
 void setup() {
     for(auto pin : DATA)
     {
@@ -51,7 +65,7 @@ void setup() {
 
 void print(const char* t, unsigned length)
 {
-    for(unsigned digit = 0; digit < length; digit++)
+    for(unsigned digit = 0; digit < 8; digit++)
     {
         /*
         Serial.print(t[digit]);
@@ -67,7 +81,7 @@ void print(const char* t, unsigned length)
         digitalWrite(DIGIT[0], ~digit & 0b10);
         for(unsigned i = 0; i < sizeof(DATA); i++)
         {
-            digitalWrite(DATA[i], (1 << i) & t[digit]);
+            digitalWrite(DATA[i], digit < length ? (1 << i) & t[digit] : 0);
             //Serial.print( (1 << i) & t[digit] ? 1 : 0);
         }
         //Serial.print(" ");
@@ -122,8 +136,19 @@ void loop() {
     Serial.println();
     RtcTemperature temp = Rtc.GetTemperature();
     temp.Print(Serial);
-    // you may also get the temperature as a float and print it
     Serial.println("C");
+
+    for(Alert& alert : alerts)
+    {
+        if(alert.dayOfWeek == 255 || now.DayOfWeek() == alert.dayOfWeek)
+        {
+            if(alert.hour == now.Hour() && alert.minute == now.Minute() && now.Second() < ALERT_LENGTH_SEC)
+            {
+                auto_show(alert.message, strlen(alert.message));
+                return;
+            }
+        }
+    }
 
     static char buf[9];
     switch(state)
