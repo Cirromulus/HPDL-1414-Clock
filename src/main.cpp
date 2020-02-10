@@ -53,20 +53,31 @@ void print(const char* t, unsigned length)
 {
     for(unsigned digit = 0; digit < length; digit++)
     {
-        //Serial.print(t[digit]);
-        digitalWrite(DIGIT[0], ~digit & 0b10);
+        /*
+        Serial.print(t[digit]);
+        Serial.print(" ");
+        Serial.print(~digit & 0b10 ? 1 : 0);
+        Serial.print(~digit & 0b01 ? 1 : 0);
+        Serial.print(" ");
+        Serial.print(!(digit & 0b100) ? 1 : 0);
+        Serial.print((digit & 0b100) ? 1 : 0);
+        Serial.print(" ");
+        */
         digitalWrite(DIGIT[1], ~digit & 0b01);
-
+        digitalWrite(DIGIT[0], ~digit & 0b10);
         for(unsigned i = 0; i < sizeof(DATA); i++)
         {
             digitalWrite(DATA[i], (1 << i) & t[digit]);
             //Serial.print( (1 << i) & t[digit] ? 1 : 0);
         }
+        //Serial.print(" ");
         digitalWrite(WRITE[0], !(digit & 0b100));
         digitalWrite(WRITE[1], digit & 0b100);
-
+        //while(!Serial.available() ){};Serial.read();
         digitalWrite(WRITE[0], 1);
         digitalWrite(WRITE[1], 1);
+        //delay(2000);
+        //Serial.println();
     }
 }
 
