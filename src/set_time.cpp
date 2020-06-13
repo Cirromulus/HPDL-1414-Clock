@@ -4,7 +4,7 @@
 
 enum class State : uint8_t
 {
-    day,
+    day = 0,
     month,
     year,
     hour,
@@ -14,7 +14,7 @@ enum class State : uint8_t
 
 void set_time()
 {
-    State state = State::hour;
+    State state = static_cast<State>(0);
     char buf[9];
     uint8_t frame = 0;
     RtcDateTime new_time = now;
