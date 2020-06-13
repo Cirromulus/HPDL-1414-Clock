@@ -1,29 +1,10 @@
 #include <Arduino.h>
+#include "config.hpp"
+#include "display.hpp"
 #include "rtcstuff.h"
-
-static constexpr uint8_t DATA[] =
-{
-    2,3,4,5,6,7,8
-};
-
-static constexpr uint8_t DIGIT[] =
-{
-    9,10
-};
-
-static constexpr uint8_t WRITE[] =
-{
-    11,12
-};
+#include "states.hpp"
 
 
-enum class State : unsigned
-{
-    date = 0,
-    time,
-    temp,
-    _num
-} state;
 uint8_t repeat = 0;
 uint8_t num_repetitions = 0;
 
@@ -43,75 +24,19 @@ Alert alerts[] = {
 };
 
 void setup() {
-    for(auto pin : DATA)
+
+    for(auto button : BUTTONS)
     {
-        pinMode(pin, OUTPUT);
-        digitalWrite(pin, 0);
-    }
-    for(auto pin : DIGIT)
-    {
-        pinMode(pin, OUTPUT);
-        digitalWrite(pin, 0);
-    }
-    for(auto pin : WRITE)
-    {
-        pinMode(pin, OUTPUT);
-        digitalWrite(pin, 1);
+        pinMode(button, INPUT);
+        pinMode(button, INPUT_PULLUP);
     }
     Serial.begin(115200);
 
     rtcSetup();
-    state = State::time;
+    display_init();
+    states_init();
 }
 
-void print(const char* t, unsigned length)
-{
-    for(unsigned digit = 0; digit < 8; digit++)
-    {
-        /*
-        Serial.print(t[digit]);
-        Serial.print(" ");
-        Serial.print(~digit & 0b10 ? 1 : 0);
-        Serial.print(~digit & 0b01 ? 1 : 0);
-        Serial.print(" ");
-        Serial.print(!(digit & 0b100) ? 1 : 0);
-        Serial.print((digit & 0b100) ? 1 : 0);
-        Serial.print(" ");
-        */
-        digitalWrite(DIGIT[1], ~digit & 0b01);
-        digitalWrite(DIGIT[0], ~digit & 0b10);
-        for(unsigned i = 0; i < sizeof(DATA); i++)
-        {
-            digitalWrite(DATA[i], digit < length ? (1 << i) & t[digit] : 0);
-            //Serial.print( (1 << i) & t[digit] ? 1 : 0);
-        }
-        //Serial.print(" ");
-        digitalWrite(WRITE[0], !(digit & 0b100));
-        digitalWrite(WRITE[1], digit & 0b100);
-        //while(!Serial.available() ){};Serial.read();
-        digitalWrite(WRITE[0], 1);
-        digitalWrite(WRITE[1], 1);
-        //delay(2000);
-        //Serial.println();
-    }
-}
-
-void scroll(const char* string, unsigned length)
-{
-    for(unsigned i = 0; i < length; i++)
-    {
-        print(&string[i], i + 8 <= length ? 8 : length - i);
-        delay(200);
-    }
-}
-
-void auto_show(const char* string, unsigned length)
-{
-    if(length <= 8)
-        print(string, length);
-    else
-        scroll(string, length);
-}
 
 void loop() {
     if (!Rtc.IsDateTimeValid())
@@ -131,12 +56,15 @@ void loop() {
             Serial.println("RTC lost confidence in the DateTime!");
         }
     }
-    RtcDateTime now = Rtc.GetDateTime();
-    printDateTime(now);
+
+    Serial.print("Buttons: ");
+    for(auto butt : BUTTONS)
+    {
+        Serial.print(digitalRead(butt) ? "1" : "x");
+    }
     Serial.println();
-    RtcTemperature temp = Rtc.GetTemperature();
-    temp.Print(Serial);
-    Serial.println("C");
+
+    rtcUpdate();
 
     for(Alert& alert : alerts)
     {
@@ -150,57 +78,8 @@ void loop() {
         }
     }
 
-    static char buf[9];
-    switch(state)
-    {
-        case State::time:
-            if(repeat == 0)
-                num_repetitions = 20;
-            snprintf_P(buf,
-                    sizeof(buf),
-                    PSTR("%02u:%02u:%02u"),
-                    now.Hour(),
-                    now.Minute(),
-                    now.Second()
-            );
-            if(repeat % 2)
-            {
-                buf[2] = ' ';
-                buf[5] = ' ';
-            }
-            break;
-        case State::date:
-            if(repeat == 0)
-                num_repetitions = 2;
-            snprintf_P(buf,
-                    sizeof(buf),
-                    PSTR("%02u.%02u.%02u"),
-                    now.Day(),
-                    now.Month(),
-                    now.Year()
-            );
-            break;
-        case State::temp:
-            if(repeat == 0)
-                num_repetitions = 1;
-            snprintf_P(buf,
-                    sizeof(buf),
-                    PSTR(" %04d C "),
-                    int(temp.AsFloatDegC()*100)
-            );
-            buf[4] = buf[3];
-            buf[3] = '.';
-            break;
-        default:
-            state = State::time;
-            break;
-    }
-    //Serial.println(buf);
-    auto_show(buf, 8);
-    delay(1000);
-    if(++repeat > num_repetitions)
-    {
-        state = static_cast<State>((static_cast<unsigned>(state) + 1) % static_cast<unsigned>(State::_num));
-        repeat = 0;
-    }
+
+    state_act();
+    check_and_transition(Message{Message::Type::none});
+    delay(999);        //not really necessary to being precise
 }

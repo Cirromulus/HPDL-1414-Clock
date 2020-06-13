@@ -2,6 +2,9 @@
 
 RtcDS3231<TwoWire> Rtc(Wire);
 
+RtcDateTime now;
+RtcTemperature temp;
+
 void printDateTime(const RtcDateTime& dt)
 {
     char datestring[20];
@@ -78,4 +81,10 @@ void rtcSetup()
     // just clear them to your needed state
     Rtc.Enable32kHzPin(false);
     Rtc.SetSquareWavePin(DS3231SquareWavePin_ModeNone);
+}
+
+void rtcUpdate()
+{
+    now = Rtc.GetDateTime();
+    temp = Rtc.GetTemperature();
 }
