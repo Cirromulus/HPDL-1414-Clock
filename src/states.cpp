@@ -2,6 +2,8 @@
 #include "states.hpp"
 #include "display.hpp"
 #include "config.hpp"
+#include "button.hpp"
+#include "set_time.hpp"
 
 static State state;
 static uint8_t frame;
@@ -42,7 +44,7 @@ void state_act()
                     PSTR("%02u.%02u.%02u"),
                     now.Day(),
                     now.Month(),
-                    now.Year()
+                    now.Year()%100
             );
             break;
         case State::temp:
@@ -55,7 +57,8 @@ void state_act()
             buf[3] = '.';
             break;
         case State::set_time:
-
+            set_time();
+            memcpy(buf, PSTR("SAVE OK "), 9);
         default:
             Serial.println("there is something wrong with the state");
             break;
@@ -64,37 +67,36 @@ void state_act()
     auto_show(buf, 8);
 };
 
-void check_and_transition(Message message)
+void check_and_transition()
 {
     frame++;
     State next_state = state;
 
-    switch(message.type)
+    switch(state)
     {
-        case Message::Type::button_press:
-            next_state = State::set_time;
+        case State::date:
+            if(frame == 2 || getButtonDebounce(upButton))
+                next_state = State::time;
             break;
-        default:    //Normal operation
-            switch(state)
-            {
-                case State::date:
-                    if(frame == 2)
-                        next_state = State::time;
-                    break;
-                case State::time:
-                    if(frame == 20)
-                        next_state = State::temp;
-                    break;
-                case State::temp:
-                    if(frame == 2)
-                        next_state = State::date;
-                    break;
-                case State::set_time:
-                    //no return yet
-                    break;
-                default:
-                    next_state = State::time;
-            }
+        case State::time:
+            if(frame == 20 || getButtonDebounce(upButton))
+                next_state = State::temp;
+            break;
+        case State::temp:
+            if(frame == 2 || getButtonDebounce(upButton))
+                next_state = State::date;
+            break;
+        case State::set_time:
+            next_state = State::time;
+            break;
+        default:
+            next_state = State::time;
+    }
+
+    //button override
+    if(getButtonDebounce(nextButton))
+    {
+        next_state = State::set_time;
     }
 
     if(next_state != state)

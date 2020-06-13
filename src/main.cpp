@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include "config.hpp"
 #include "display.hpp"
+#include "button.hpp"
 #include "rtcstuff.h"
 #include "states.hpp"
 
@@ -24,14 +25,9 @@ Alert alerts[] = {
 };
 
 void setup() {
-
-    for(auto button : BUTTONS)
-    {
-        pinMode(button, INPUT);
-        pinMode(button, INPUT_PULLUP);
-    }
     Serial.begin(115200);
 
+    button_init();
     rtcSetup();
     display_init();
     states_init();
@@ -80,6 +76,6 @@ void loop() {
 
 
     state_act();
-    check_and_transition(Message{Message::Type::none});
+    check_and_transition();
     delay(999);        //not really necessary to being precise
 }
