@@ -2,7 +2,7 @@
 #include "display.hpp"
 #include "rtcstuff.h"
 
-static const char save_msg[] = "Press 'set' again to save";
+static const char save_msg[] = "PRESS 'SET' AGAIN TO SAVE";
 
 void set_time()
 {
@@ -108,6 +108,7 @@ void set_time()
                 new_time.Month(),
                 new_time.Year()%100
             );
+            break;
         case State::save:
             memcpy(buf, PSTR("  SAVE? "), 9);
             break;
@@ -149,6 +150,7 @@ void set_time()
                     return; //END
                 case static_cast<State>(static_cast<uint8_t>(State::save) - 1):
                     auto_show(save_msg,sizeof(save_msg));
+                    //fall-through
                 default:
                     state = static_cast<State>(static_cast<uint8_t>(state) + 1);
             }

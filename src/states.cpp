@@ -59,6 +59,7 @@ void state_act()
         case State::set_time:
             set_time();
             memcpy(buf, PSTR("SAVE OK "), 9);
+            break;
         default:
             Serial.println("there is something wrong with the state");
             break;
